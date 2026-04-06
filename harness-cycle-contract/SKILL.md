@@ -1,9 +1,9 @@
 ---
-name: cycle-contract
+name: harness-cycle-contract
 description: Generate a testable contract for a single build cycle — defining what will be built, acceptance criteria, and how the evaluator will verify completion. Use when user mentions "cycle contract", "define the cycle", "what does done look like", "acceptance criteria", or before starting a build cycle from a spec. Bridges the gap between product spec and verifiable implementation.
 ---
 
-# Cycle Contract
+# Harness Cycle Contract
 
 ## Purpose
 

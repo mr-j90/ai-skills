@@ -1,6 +1,6 @@
 ---
-name: plan-spec
-description: Expand a short product idea (1–4 sentences) into a full product specification with features, user stories, technical direction, and a cycle breakdown for implementation. Use when user mentions "plan this", "spec this out", "write a spec", "product spec", "expand this idea", "plan-spec", or provides a short app idea and wants it scoped into a buildable plan before coding begins.
+name: harness-plan-spec
+description: Expand a short product idea (1–4 sentences) into a full product specification with features, user stories, technical direction, and a cycle breakdown for implementation. Use when user mentions "plan this", "spec this out", "write a spec", "product spec", "expand this idea", "harness-plan-spec", or provides a short app idea and wants it scoped into a buildable plan before coding begins.
 ---
 
 # Plan Spec

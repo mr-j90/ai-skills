@@ -1,9 +1,9 @@
 ---
-name: qa-eval
-description: Evaluate a completed build cycle by testing the running application against its contract criteria, filing specific bugs, and grading on functionality, design, code quality, and spec fidelity. Use when user mentions "QA this", "evaluate the cycle", "run QA", "qa-eval", "grade this build", or after a build-cycle has been completed and needs verification.
+name: harness-qa-eval
+description: Evaluate a completed build cycle by testing the running application against its contract criteria, filing specific bugs, and grading on functionality, design, code quality, and spec fidelity. Use when user mentions "QA this", "evaluate the cycle", "run QA", "harness-qa-eval", "grade this build", or after a build-cycle has been completed and needs verification.
 ---
 
-# QA Eval
+# Harness QA Eval
 
 ## Purpose
 

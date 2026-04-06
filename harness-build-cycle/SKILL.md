@@ -1,9 +1,9 @@
 ---
-name: build-cycle
-description: Implement a single build cycle against its contract — writing code, running it, and self-checking against acceptance criteria before handing off to QA. Use when user mentions "build this cycle", "implement the cycle", "start building", "build-cycle", or after a cycle-contract has been defined and the user is ready to code.
+name: harness-build-cycle
+description: Implement a single build cycle against its contract — writing code, running it, and self-checking against acceptance criteria before handing off to QA. Use when user mentions "build this cycle", "implement the cycle", "start building", "harness-build-cycle", or after a cycle-contract has been defined and the user is ready to code.
 ---
 
-# Build Cycle
+# Harness Build Cycle
 
 ## Purpose
 
