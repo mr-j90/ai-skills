@@ -1,0 +1,81 @@
+{
+  "title": "Decision Doc Template",
+  "subtitle": "Side-by-side comparison and recommendation for an architectural or vendor decision.",
+  "blocks": [
+    { "type": "heading", "level": "h1", "text": "Context" },
+    { "type": "paragraph", "text": "One paragraph framing what we&rsquo;re deciding and why it matters now. End with the question we&rsquo;re answering." },
+
+    { "type": "heading", "level": "h1", "text": "Options" },
+    { "type": "heading", "level": "h2", "text": "Option A &mdash; [name]" },
+    { "type": "paragraph", "text": "What it is in 1&ndash;3 sentences. Best fit when&hellip;" },
+    {
+      "type": "bullets",
+      "items": [
+        "Trigger condition 1.",
+        "Trigger condition 2.",
+        "Trigger condition 3."
+      ]
+    },
+    { "type": "heading", "level": "h2", "text": "Option B &mdash; [name]" },
+    { "type": "paragraph", "text": "What it is in 1&ndash;3 sentences. Best fit when&hellip;" },
+    {
+      "type": "bullets",
+      "items": [
+        "Trigger condition 1.",
+        "Trigger condition 2.",
+        "Trigger condition 3."
+      ]
+    },
+
+    { "type": "page_break" },
+
+    { "type": "heading", "level": "h1", "text": "Side-by-Side Comparison" },
+    {
+      "type": "comparison",
+      "option_a": "Option A",
+      "option_b": "Option B",
+      "dimensions": [
+        "What it is",
+        "Cost model",
+        "Operational burden",
+        "Time to value",
+        "Scalability",
+        "Risk / lock-in",
+        "Best fit when"
+      ],
+      "option_a_values": [
+        "Description for A",
+        "Cost for A",
+        "Burden for A",
+        "Time for A",
+        "Scaling for A",
+        "Risks for A",
+        "Trigger for A"
+      ],
+      "option_b_values": [
+        "Description for B",
+        "Cost for B",
+        "Burden for B",
+        "Time for B",
+        "Scaling for B",
+        "Risks for B",
+        "Trigger for B"
+      ]
+    },
+
+    { "type": "callout", "kind": "good", "text": "<b>Recommendation:</b> Start with Option [A or B] unless [trigger condition] forces the other path. State the call clearly." },
+
+    { "type": "heading", "level": "h1", "text": "Open questions" },
+    {
+      "type": "bullets",
+      "items": [
+        "Question 1 we still need answered before committing.",
+        "Question 2.",
+        "Question 3."
+      ]
+    },
+
+    { "type": "hr" },
+    { "type": "paragraph", "text": "<font color='#6b7280'>Generated for internal review. Decisions should be revisited as conditions change.</font>" }
+  ]
+}

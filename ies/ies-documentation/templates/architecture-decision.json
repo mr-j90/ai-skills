@@ -1,0 +1,120 @@
+{
+  "title": "Architecture Decision: Example Title",
+  "subtitle": "Short framing line. Who's the audience and what's the decision in one sentence.",
+  "author": "IES",
+  "page_footer_label": "IES — Internal",
+  "footer_note": "Generated for internal team review. Architecture decisions should be revisited as scale, data sensitivity, and traffic patterns evolve.",
+  "sections": [
+    { "type": "heading", "level": 1, "text": "Architecture Context" },
+    {
+      "type": "paragraph",
+      "text": "Two or three sentences setting the scene. What system are we talking about, what tier lives where, what is already in place."
+    },
+    {
+      "type": "callout",
+      "kind": "info",
+      "text": "<b>Why this matters:</b> One sentence on why this decision is worth a doc instead of a Slack thread."
+    },
+
+    { "type": "heading", "level": 1, "text": "The Options Under Consideration" },
+
+    { "type": "heading", "level": 2, "text": "Option A &mdash; short label" },
+    { "type": "paragraph", "text": "Two or three sentences describing Option A." },
+    { "type": "heading", "level": 3, "text": "Best fit when:" },
+    {
+      "type": "bullets",
+      "items": [
+        "Condition 1.",
+        "Condition 2.",
+        "Condition 3."
+      ]
+    },
+
+    { "type": "heading", "level": 2, "text": "Option B &mdash; short label" },
+    { "type": "paragraph", "text": "Two or three sentences describing Option B." },
+    { "type": "heading", "level": 3, "text": "Best fit when:" },
+    {
+      "type": "bullets",
+      "items": [
+        "Condition 1.",
+        "Condition 2."
+      ]
+    },
+
+    { "type": "pagebreak" },
+
+    { "type": "heading", "level": 1, "text": "Side-by-Side Comparison" },
+    {
+      "type": "paragraph",
+      "text": "Both options are valid; they optimize for different constraints. The key question is..."
+    },
+    {
+      "type": "comparison",
+      "headers": ["Dimension", "Option A", "Option B"],
+      "rows": [
+        ["Where it runs", "Cloud SaaS in region", "Dedicated server on-prem"],
+        ["Latency", "5&ndash;10ms intra-region", "10&ndash;40ms cross-network"],
+        ["Operational burden", "Provider-managed", "Team owns it end-to-end"],
+        ["Cost model", "Subscription", "Capex + ops time"],
+        ["Time to first value", "Minutes", "Days&ndash;weeks"],
+        ["Best fit when&hellip;", "Want to ship fast", "Data sensitivity dominates"]
+      ],
+      "col_widths": [1.4, 2.55, 2.55]
+    },
+    {
+      "type": "callout",
+      "kind": "good",
+      "text": "<b>Recommendation heuristic:</b> Default to Option A unless a specific constraint forces Option B. The architecture remains portable either way."
+    },
+
+    { "type": "pagebreak" },
+
+    {
+      "type": "group",
+      "keep_together": true,
+      "sections": [
+        { "type": "heading", "level": 1, "text": "End-to-End Flow" },
+        { "type": "paragraph", "text": "Below is the full request lifecycle across the components." },
+        {
+          "type": "flow_diagram",
+          "boxes": [
+            { "title": "UI",              "subtitle": "Browser / Mobile",      "color": "#0ea5e9" },
+            { "title": "FastAPI Gateway", "subtitle": "Azure Container Apps",  "color": "#2563eb" },
+            { "title": "LlamaIndex",      "subtitle": "RAG orchestration",     "color": "#7c3aed" },
+            { "title": "Qdrant",          "subtitle": "Vector store",          "color": "#059669" },
+            { "title": "DGX Cluster",     "subtitle": "vLLM + embeddings",     "color": "#dc2626" }
+          ]
+        }
+      ]
+    },
+
+    { "type": "pagebreak" },
+
+    { "type": "heading", "level": 1, "text": "Query Flow (read path)" },
+    {
+      "type": "paragraph",
+      "text": "Latency-sensitive path. Each step shows which component does what and where the cross-network hops happen."
+    },
+    {
+      "type": "steps",
+      "steps": [
+        { "component": "UI", "what": "User submits a question; opens an SSE/WebSocket to the gateway." },
+        { "component": "FastAPI Gateway", "what": "Authenticates, rate-limits, validates, hands off to the orchestrator." },
+        { "component": "LlamaIndex &rarr; DGX", "what": "Embeds the query into a dense vector. <b>[Cross-network hop #1]</b>" },
+        { "component": "LlamaIndex &rarr; Qdrant", "what": "Top-K similarity search with metadata filters." },
+        { "component": "LlamaIndex &rarr; DGX (vLLM)", "what": "Calls the LLM with the assembled prompt and streams tokens. <b>[Cross-network hop #2]</b>" },
+        { "component": "UI", "what": "Renders streamed tokens; displays cited sources on stream end." }
+      ]
+    },
+
+    { "type": "heading", "level": 1, "text": "Key decisions" },
+    {
+      "type": "bullets",
+      "items": [
+        "<b>Decision 1:</b> Short rationale.",
+        "<b>Decision 2:</b> Short rationale.",
+        "<b>Decision 3:</b> Short rationale."
+      ]
+    }
+  ]
+}

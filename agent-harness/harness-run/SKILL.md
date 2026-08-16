@@ -14,7 +14,7 @@ Orchestrate the full build pipeline from a short product idea to a working, QA-v
 User provides a 1–4 sentence product idea. You run the full pipeline:
 
 ```
-plan-spec → for each cycle: cycle-contract → build-cycle → qa-eval → (fix loop) → next cycle
+harness-plan-spec → for each cycle: cycle-contract → build-cycle → qa-eval → (fix loop) → next cycle
 ```
 
 ## Workflow
