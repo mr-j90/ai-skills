@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!--
+  SKIPFORWARD DELIVERY PLAN — self-contained static send.
+  No external deps, no remote fonts, no base64 rasters. Open in a browser; Cmd-P to Save as PDF.
+
+  HOW TO USE THIS FILE
+  Copy it, then rewrite every region flagged by an EDIT comment below. The CSS block is
+  finished work; leave it alone. Everything above the closing style tag is machinery,
+  everything after the opening body tag is content you rewrite.
+
+  The Gantt is an 8-column week grid. To change the number of weeks, edit the weeks
+  token in :root AND the repeat() counts in .grow and .gtrack, then keep every
+  grid-column span inside the new range.
+
+  Note for editors: HTML comments cannot contain a double hyphen, so EDIT flags below
+  are written without nesting.
+-->
+<title>Meridian Freight · Warehouse Telemetry Integration · Delivery Plan</title>
+<style>
+  :root{
+    /* ---- SkipForward brand ---- */
+    --brand:#A4B885;        /* fills with ink on top, logo core. NEVER text on white (2.15:1) */
+    --brand-hover:#91AB69;
+    --brand-strong:#5F763D; /* icons, phase labels, rules, meters, accent text — 5.07:1 on white */
+    --brand-deep:#4D602F;   /* accent-text hover — 6.93:1 */
+    --brand-soft:#E8F0DB;   /* icon chips, badges */
+    --brand-softer:#F3F7ED; /* stepper circles, secondary button hover */
+
+    /* ---- Neutrals (cool-biased to sit with #393E46) ---- */
+    --ink:#222831;
+    --ink-muted:#393E46;
+    --ink-faint:#697280;    /* eyebrows, stat captions — 4.86:1 */
+    --line:#D7D9DE;
+    --line-soft:#E4E6EA;
+    --surface:#FFFFFF;
+    --surface-sunken:#E8E9EC;
+    --background:#EEEEEE;
+
+    /* ---- Reserved status. Never used for a workstream. ---- */
+    --risk:#A33B2E;         /* hard dates, held risk, stop conditions — 6.52:1 text-safe */
+    --risk-bg:#F7EBE9; --risk-line:#E4C6C1;
+    --gate:#A87A00;         /* dependency gate — 3.85:1, MARK ONLY, never text */
+
+    /* ---- Validated categorical ramp. Fixed order, assigned in sequence, never cycled.
+           Adjacent-pair CVD ΔE 16.1 deutan / 16.7 normal; every fill clears 4.5:1
+           against its white label. Re-run the dataviz validator before editing. ---- */
+    --c1:#5E7F26;  /* workstream 1 */
+    --c2:#1F6BA8;  /* workstream 2 */
+    --c3:#B0522E;  /* workstream 3 */
+    --c4:#9B3A8C;  /* workstream 4 */
+    --c-ops:#393E46;    /* deployment / operational, not an identity */
+    --c-client:#697280; /* client-owned work — always hatched */
+
+    --weeks:8;
+    --radius:10px;
+    --mono:ui-monospace,'SFMono-Regular','Cascadia Code',Consolas,'Liberation Mono',Menlo,monospace;
+    --ui:'Inter','Segoe UI',system-ui,-apple-system,Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--background);color:var(--ink);font-family:var(--ui);
+    font-size:15px;line-height:1.64;}
+  .wrap{max-width:1060px;margin-inline:auto;padding:26px 18px 80px;}
+  a{color:var(--brand-strong);text-decoration:none}
+  a:hover{color:var(--brand-deep);text-decoration:underline}
+  b{font-weight:700;color:var(--ink)}
+  code,.mono{font-family:var(--mono);font-size:.88em}
+  code{background:var(--surface-sunken);padding:1px 6px;border-radius:5px;
+    border:1px solid var(--line);color:var(--brand-deep)}
+
+  /* ---------- HERO TITLEBLOCK (always dark) ---------- */
+  .titleblock{position:relative;border-radius:14px;overflow:hidden;border:1px solid var(--ink);
+    background-color:var(--ink);
+    background-image:
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1200' height='180' preserveAspectRatio='none'%3E%3Cpath d='M0 96 C190 40 360 140 600 96 C840 52 1010 140 1200 84 L1200 180 L0 180 Z' fill='%23A4B885' opacity='0.15'/%3E%3Cpath d='M0 124 C210 76 380 158 620 120 C880 82 1020 158 1200 110 L1200 180 L0 180 Z' fill='%235F763D' opacity='0.22'/%3E%3C/svg%3E"),
+      radial-gradient(140% 150% at 6% -30%, rgba(164,184,133,0.30) 0%, rgba(164,184,133,0) 52%),
+      linear-gradient(118deg,#1A1F26 0%,#2B3540 56%,#1A1F26 100%);
+    background-repeat:no-repeat;
+    background-position:bottom center, top left, center;
+    background-size:100% 88px, cover, cover;
+    box-shadow:0 8px 28px rgba(34,40,49,0.16);}
+  .tb-main{padding:30px 28px 24px;border-bottom:1px solid rgba(255,255,255,0.11);position:relative;}
+  .tb-main::before{content:"";position:absolute;inset-inline-start:0;inset-block:0;width:5px;background:var(--brand);}
+  .tb-head{display:flex;justify-content:space-between;align-items:flex-start;gap:18px;}
+  .tb-eyebrow{font-size:11px;font-weight:800;letter-spacing:.22em;text-transform:uppercase;color:var(--brand);}
+  .tb-title{font-size:clamp(28px,4.8vw,42px);line-height:1.04;font-weight:800;letter-spacing:-.015em;
+    margin:11px 0 9px;color:#fff;}
+  .tb-sub{color:#CBD2DA;max-width:66ch;font-size:15px;}
+  .hero-logo{flex-shrink:0;color:#fff;}
+  .hero-logo svg{height:27px;width:auto;display:block;}
+  .tb-meta{display:grid;grid-template-columns:repeat(4,1fr);}
+  .tb-cell{padding:14px 20px;border-inline-start:1px solid rgba(255,255,255,0.11);}
+  .tb-cell:first-child{border-inline-start:none;}
+  .tb-cell .k{display:block;font-size:10px;font-weight:800;letter-spacing:.16em;
+    text-transform:uppercase;color:#9AA4B1;}
+  .tb-cell .v{display:block;font-family:var(--mono);font-size:13.5px;margin-top:5px;color:#EEF2F6;}
+  .tb-cell .v.spine{color:var(--brand);}   /* the immovable date */
+  @media (max-width:720px){
+    .tb-meta{grid-template-columns:repeat(2,1fr)}
+    .tb-cell:nth-child(odd){border-inline-start:none}
+    .hero-logo svg{height:21px}}
+
+  /* ---------- TOP NAV (always dark) ---------- */
+  .topnav{position:sticky;top:0;z-index:8;display:flex;flex-wrap:wrap;gap:4px;
+    background:rgba(34,40,49,0.97);backdrop-filter:blur(8px);border:1px solid var(--ink);
+    border-radius:11px;padding:6px;margin:16px 0 24px;box-shadow:0 4px 16px rgba(34,40,49,0.14);}
+  .topnav a{flex:1 1 130px;text-align:center;font-size:12.5px;font-weight:700;color:#9AA4B1;
+    padding:10px 8px;border-radius:8px;transition:background .15s,color .15s;}
+  .topnav a .nn{font-family:var(--mono);color:var(--brand);margin-inline-end:7px;font-weight:700;}
+  .topnav a:hover{background:rgba(255,255,255,0.09);color:#fff;text-decoration:none;}
+
+  /* ---------- PAGE SECTIONS ---------- */
+  .page{background:var(--surface);border:1px solid var(--line);border-radius:13px;
+    overflow:hidden;margin:18px 0;box-shadow:0 1px 3px rgba(34,40,49,0.05);}
+  .pageband{display:flex;align-items:baseline;gap:16px;padding:20px 26px 15px;
+    border-bottom:1px solid var(--line);background:linear-gradient(180deg,var(--brand-softer),transparent);}
+  .pageband .pnum{font-family:var(--mono);font-size:30px;font-weight:700;color:var(--brand-strong);line-height:1;}
+  .pageband .pt{font-size:21px;font-weight:800;letter-spacing:-.015em;color:var(--ink);}
+  .pbody{padding:22px 26px;}
+  h3{font-size:12.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;
+    color:var(--brand-deep);margin:24px 0 10px;padding-bottom:7px;border-bottom:1px solid var(--line-soft);}
+  p{margin:10px 0;color:var(--ink-muted);}
+  ul{margin:8px 0;padding-inline-start:20px;} li{margin:6px 0;color:var(--ink-muted);}
+
+  /* the headline claim of a section */
+  .ask{background:var(--brand-softer);border:1px solid var(--line);
+    border-inline-start:4px solid var(--brand-strong);border-radius:10px;
+    padding:15px 18px;margin:14px 0;font-size:15px;color:var(--ink);}
+  .cap{color:var(--ink-faint);font-size:13px;margin:5px 0 16px;display:block;}
+
+  /* boundary: we build / we do not */
+  .twocol{display:flex;gap:16px;flex-wrap:wrap;} .col{flex:1;min-width:280px;}
+  .box{border:1px solid var(--line);border-radius:10px;padding:15px 17px;margin:10px 0;
+    background:var(--surface);}
+  .box > b{display:block;margin-bottom:4px;}  /* the box heading only, not <b> inside list items */
+  .box.good{border-inline-start:4px solid var(--brand-strong);background:var(--brand-softer);}
+  .box.out{border-inline-start:4px solid var(--ink-faint);background:var(--surface-sunken);}
+
+  /* ---------- TIMELINE / GANTT ---------- */
+  .gantt{border:1px solid var(--line);border-radius:11px;overflow:hidden;
+    background:var(--surface);margin:14px 0 6px;}
+  .gantt-scroll{overflow-x:auto;}
+  .gantt-inner{min-width:860px;}
+  .grow{display:grid;grid-template-columns:196px repeat(8,1fr);align-items:stretch;}
+  .grow.head{background:var(--surface-sunken);border-bottom:1px solid var(--line);}
+  .grow.head .gc{padding:9px 4px;text-align:center;font-family:var(--mono);font-size:10.5px;
+    font-weight:700;color:var(--ink);border-inline-start:1px solid var(--line);line-height:1.3;}
+  .grow.head .gc .sub{display:block;color:var(--ink-faint);font-weight:400;font-size:9.5px;letter-spacing:.02em;}
+  .grow.head .glab{padding:9px 13px;font-size:10px;font-weight:800;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--ink-faint);display:flex;align-items:center;}
+  .grow.bar{border-bottom:1px solid var(--line-soft);}
+  .grow.bar:last-child{border-bottom:none;}
+  .grow.bar .glab{padding:11px 13px;border-inline-end:1px solid var(--line);
+    display:flex;flex-direction:column;justify-content:center;}
+  .grow.bar .glab .n{font-family:var(--mono);font-size:11px;font-weight:700;
+    color:var(--brand-strong);letter-spacing:.04em;}
+  .grow.bar .glab .t{font-size:12.5px;font-weight:700;color:var(--ink);line-height:1.32;margin-top:2px;}
+  .gtrack{position:relative;grid-column:2 / span 8;display:grid;grid-template-columns:repeat(8,1fr);padding:11px 0;}
+  .gcell{border-inline-start:1px solid var(--line-soft);grid-row:1;}
+  .gcell:nth-child(1){grid-column:1}.gcell:nth-child(2){grid-column:2}.gcell:nth-child(3){grid-column:3}
+  .gcell:nth-child(4){grid-column:4}.gcell:nth-child(5){grid-column:5}.gcell:nth-child(6){grid-column:6}
+  .gcell:nth-child(7){grid-column:7}.gcell:nth-child(8){grid-column:8}
+  /* flat validated fills — no gradients, they shift the validated colour */
+  .gbar{grid-row:1;align-self:center;height:26px;line-height:26px;border-radius:5px;display:block;
+    padding:0 10px;font-size:11px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;
+    text-overflow:ellipsis;margin:0 3px;
+    print-color-adjust:exact;-webkit-print-color-adjust:exact;}
+  .gbar.c1{background:var(--c1);} .gbar.c2{background:var(--c2);}
+  .gbar.c3{background:var(--c3);} .gbar.c4{background:var(--c4);}
+  .gbar.ops{background:var(--c-ops);}
+  .gbar.client{background:repeating-linear-gradient(45deg,#697280,#697280 7px,#7C8593 7px,#7C8593 14px);}
+  .gbar.joint{background:repeating-linear-gradient(45deg,#1F6BA8,#1F6BA8 8px,#5F7382 8px,#5F7382 16px);}
+  .gbar.ghost{background:transparent;border:1.5px dashed var(--ink-faint);color:var(--ink-faint);}
+  .gmark{grid-row:1;align-self:center;justify-self:center;width:0;position:relative;z-index:3;}
+  .gmark span{position:absolute;left:-7px;top:-7px;width:14px;height:14px;background:var(--risk);
+    border:2px solid var(--surface);transform:rotate(45deg);border-radius:2px;
+    print-color-adjust:exact;-webkit-print-color-adjust:exact;}
+  .gmark.gate span{background:var(--gate);}
+  .gkey{display:flex;flex-wrap:wrap;gap:10px;margin:12px 0 2px;}
+  .gkey .k{display:inline-flex;align-items:center;gap:7px;font-size:11.5px;font-weight:700;color:var(--ink-faint);}
+  .gkey .sw{width:22px;height:11px;border-radius:3px;display:inline-block;
+    print-color-adjust:exact;-webkit-print-color-adjust:exact;}
+  .gkey .sw.c1{background:var(--c1)} .gkey .sw.c2{background:var(--c2)}
+  .gkey .sw.c3{background:var(--c3)} .gkey .sw.c4{background:var(--c4)}
+  .gkey .sw.ops{background:var(--c-ops)}
+  .gkey .sw.client{background:repeating-linear-gradient(45deg,#697280,#697280 5px,#7C8593 5px,#7C8593 10px)}
+  .gkey .sw.joint{background:repeating-linear-gradient(45deg,#1F6BA8,#1F6BA8 6px,#5F7382 6px,#5F7382 12px)}
+  .gkey .sw.ghost{background:transparent;border:1.5px dashed var(--ink-faint)}
+  .gkey .sw.dia{width:12px;height:12px;background:var(--risk);transform:rotate(45deg);border-radius:2px}
+  .gkey .sw.gate{width:12px;height:12px;background:var(--gate);transform:rotate(45deg);border-radius:2px}
+  .gscroll-hint{display:none;}
+  @media (max-width:860px){.gscroll-hint{display:block;}}
+
+  /* component stack — one block per workstream component */
+  .compstack{margin:10px 0 4px;}
+  .comp{border:1px solid var(--line);border-inline-start:4px solid var(--brand-strong);
+    border-radius:10px;padding:14px 17px;margin:11px 0;background:var(--surface);}
+  .comp.c1{border-inline-start-color:var(--c1);} .comp.c2{border-inline-start-color:var(--c2);}
+  .comp.c3{border-inline-start-color:var(--c3);} .comp.c4{border-inline-start-color:var(--c4);}
+  .comp .ch{display:flex;align-items:baseline;gap:11px;flex-wrap:wrap;}
+  .comp .ch .cn{font-family:var(--mono);font-size:12px;font-weight:800;
+    color:var(--brand-strong);letter-spacing:.04em;}
+  .comp .ch .ct{font-weight:800;font-size:15.5px;color:var(--ink);letter-spacing:-.01em;}
+  .comp .cd{font-size:13px;color:var(--ink-faint);margin:4px 0 0;}
+  .comp ul{margin:9px 0 0;padding-inline-start:19px;}
+  .comp li{font-size:13px;margin:4px 0;color:var(--ink-muted);}
+
+  /* milestone strip */
+  .msrow{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0 4px;}
+  .ms{flex:1;min-width:158px;border:1px solid var(--line);border-radius:9px;
+    padding:12px 13px;background:var(--surface);}
+  .ms .d{font-family:var(--mono);font-size:14px;font-weight:700;color:var(--brand-strong);}
+  .ms .l{font-size:12px;color:var(--ink-muted);margin-top:4px;line-height:1.45;}
+  .ms.spine{border-inline-start:4px solid var(--risk);background:var(--risk-bg);}
+  .ms.spine .d{color:var(--risk);}
+
+  /* fact / ask table */
+  table.ft{border-collapse:collapse;width:100%;font-size:12.5px;margin-top:10px;}
+  table.ft th,table.ft td{border:1px solid var(--line);padding:8px 10px;
+    text-align:start;vertical-align:top;color:var(--ink-muted);}
+  table.ft th{background:var(--surface-sunken);font-size:10px;text-transform:uppercase;
+    letter-spacing:.08em;color:var(--ink-faint);font-weight:800;}
+  table.ft td b{color:var(--ink);}
+  table.ft .cap{margin:3px 0 0;font-size:11.5px;line-height:1.45;}
+  table.ft tr.critical td{background:var(--risk-bg);}
+  table.ft tr.critical td:first-child{border-inline-start:3px solid var(--risk);}
+
+  /* module cards */
+  .mods{display:flex;gap:11px;flex-wrap:wrap;}
+  .mod{flex:1;min-width:222px;border:1px solid var(--line);border-radius:10px;
+    padding:13px 15px;background:var(--surface);}
+  .mod .mh{font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--brand-deep);}
+  .mod .mt{font-weight:800;font-size:14px;color:var(--ink);margin:4px 0 5px;}
+  .mod .md{font-size:12.5px;color:var(--ink-muted);line-height:1.5;}
+  .mod.pend{border-style:dashed;background:var(--surface-sunken);}
+
+  /* numbered next steps */
+  .steps{list-style:none;padding:0;margin:6px 0;counter-reset:s;}
+  .steps li{display:flex;gap:13px;align-items:flex-start;border:1px solid var(--line);
+    border-radius:9px;padding:13px 15px;margin:9px 0;background:var(--surface);color:var(--ink-muted);}
+  .steps li::before{counter-increment:s;content:counter(s,decimal-leading-zero);
+    font-family:var(--mono);font-weight:700;color:var(--brand-strong);flex:0 0 auto;}
+
+  /* candour callout — the thing you would rather say now than have discovered later */
+  .named{background:var(--risk-bg);border:1px solid var(--risk-line);
+    border-inline-start:4px solid var(--risk);border-radius:9px;padding:12px 15px;
+    margin:12px 0;font-size:13px;color:var(--ink);}
+  .named b{color:var(--risk);}
+  .stamp{display:inline-block;font-family:var(--mono);font-size:10px;font-weight:800;
+    letter-spacing:.12em;text-transform:uppercase;background:var(--risk-bg);color:var(--risk);
+    border:1px solid var(--risk-line);border-radius:5px;padding:2px 8px;}
+
+  footer{margin-top:32px;color:var(--ink-faint);font-size:12.5px;border-top:1px solid var(--line);
+    padding-top:16px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px;}
+  footer .foot-logo{color:var(--ink);flex-shrink:0;}
+  footer .foot-logo svg{height:17px;width:auto;display:block;}
+
+  @media print{
+    .topnav{display:none}
+    .gscroll-hint{display:none !important;}
+    .titleblock,.gbar,.gmark span,.gkey .sw,.ms.spine,.named,.stamp,.box.good,.box.out,
+    .ask,.comp,.mod.pend,table.ft th,table.ft tr.critical td{
+      print-color-adjust:exact;-webkit-print-color-adjust:exact;}
+    body{background:#fff !important;font-size:11px;}
+    .wrap{max-width:none;padding:0 0 8px;}
+    .page{break-inside:auto;margin:9px 0;box-shadow:none;}
+    .pageband{padding:11px 16px 8px;}
+    .pageband .pnum{font-size:22px;} .pageband .pt{font-size:16px;}
+    .pbody{padding:13px 16px;}
+    h3{margin:13px 0 6px;} p{margin:7px 0;}
+    .titleblock,.gantt,.ask,.named,.steps li,.ms,.mod,.box,.comp{break-inside:avoid;}
+    .comp{padding:10px 13px;margin:8px 0;}
+    table.ft tr{break-inside:avoid;}
+    .mods,.msrow,.twocol,table.ft{break-inside:auto;}
+    .tb-main{padding:20px 20px 16px;} .tb-title{font-size:26px;}
+    .titleblock{box-shadow:none;}
+    .grow{grid-template-columns:142px repeat(8,1fr);}
+    .gantt-inner{min-width:0;}
+    .gbar{padding:0 6px;margin:0 2px;height:22px;line-height:22px;font-size:10px;}
+    .grow.bar .glab{padding:8px 10px;} .grow.bar .glab .t{font-size:11px;}
+    .box,.mod,.ms{padding:10px 12px;}
+    table.ft th,table.ft td{padding:6px 8px;}
+    footer{margin-top:16px;}
+  }
+  .page,.titleblock{scroll-margin-top:78px;}
+  .titleblock{print-color-adjust:exact;-webkit-print-color-adjust:exact;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ============ EDIT: HERO. Eyebrow, title, spine sentence, four meta cells. ============ -->
+  <header class="titleblock">
+    <div class="tb-main">
+      <div class="tb-head">
+        <div>
+          <div class="tb-eyebrow">SkipForward &middot; Delivery Plan</div>
+          <div class="tb-title">Warehouse Telemetry Integration &amp; Platform Governance</div>
+        </div>
+        <div class="hero-logo"><svg viewBox="116 176 1939 358" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="SkipForward"><title>SkipForward</title><path fill="currentColor" fill-rule="evenodd" stroke="none" d="M 341.498 187.250 C 341.257 187.938, 341.158 247.225, 341.280 319 L 341.500 449.500 366.239 449.767 L 390.979 450.035 391.239 407.280 L 391.500 364.525 403.557 380.013 C 410.189 388.531, 424.767 407.762, 435.954 422.750 L 456.293 450 486.194 450 L 516.096 450 512.911 445.371 C 511.159 442.825, 507.862 438.437, 505.584 435.621 C 503.305 432.804, 500.359 428.925, 499.037 427 C 497.715 425.075, 493.796 419.900, 490.328 415.500 C 486.860 411.100, 478.490 400.075, 471.730 391 C 461.776 377.640, 451.875 364.609, 437.781 346.320 C 437.160 345.514, 439.309 342.663, 444.565 337.320 C 461.654 319.951, 509.521 268.637, 509.823 267.363 C 510.091 266.235, 504.972 266, 480.185 266 L 450.223 266 434.861 282.720 C 426.413 291.916, 413.200 306.170, 405.500 314.395 L 391.500 329.350 391.243 257.675 L 390.987 186 366.462 186 C 347.743 186, 341.833 186.296, 341.498 187.250 M 1995.457 192.555 C 1995.066 196.209, 1994.939 218.166, 1995.176 241.349 C 1995.413 264.532, 1995.433 284.305, 1995.222 285.289 C 1994.916 286.718, 1993.511 285.837, 1988.243 280.908 C 1981.086 274.213, 1969.970 268.239, 1959.500 265.459 C 1956.200 264.583, 1949 263.617, 1943.500 263.314 C 1919.531 261.990, 1895.379 271.378, 1879.396 288.232 C 1870.826 297.269, 1865.655 305.007, 1861.321 315.285 C 1856.077 327.718, 1853.861 337.264, 1853.147 350.500 C 1852.302 366.173, 1853.269 377.646, 1856.440 389.561 C 1859.926 402.657, 1865.424 413.942, 1872.867 423.277 C 1883.251 436.302, 1898.726 446.691, 1914.452 451.195 C 1921.498 453.213, 1924.618 453.492, 1939.500 453.433 C 1955.142 453.371, 1957.145 453.152, 1964.578 450.693 C 1973.856 447.625, 1982.883 442.115, 1990.616 434.802 L 1996 429.710 1996 439.855 L 1996 450 2020.504 450 L 2045.007 450 2044.754 318.250 L 2044.500 186.500 2020.334 186.206 L 1996.169 185.913 1995.457 192.555 M 201.500 189.109 C 192.905 190.347, 178.633 194.596, 171.282 198.104 C 163.173 201.974, 150.368 211.625, 145.566 217.485 C 135.569 229.684, 130.269 243.219, 129.307 258.998 C 128.578 270.974, 130.749 282.566, 135.483 291.966 C 148.124 317.069, 167.156 328.290, 220.473 342.074 C 247.023 348.939, 259.024 353.980, 265.934 361.172 C 272.708 368.221, 275.107 379.843, 272.065 390.868 C 270.511 396.500, 263.364 404.186, 256.607 407.491 C 249.533 410.953, 239.198 412.965, 228.500 412.965 C 199.447 412.965, 181.370 399.857, 178.556 376.750 L 177.856 371 152.397 371 C 131.206 371, 126.845 371.241, 126.387 372.434 C 125.637 374.389, 127.761 391.398, 129.485 397.234 C 133.095 409.460, 142.400 423.921, 151.967 432.174 C 162.686 441.420, 177.067 448.230, 194.441 452.287 C 202.289 454.120, 206.640 454.406, 227 454.423 C 247.547 454.440, 251.638 454.175, 259.559 452.307 C 285.745 446.135, 305.718 432.969, 316.911 414.500 C 324.551 401.894, 328.237 382.937, 326.019 367.659 C 324.629 358.088, 321.848 349.220, 318.343 343.182 C 314.044 335.777, 303.304 325.317, 294.616 320.074 C 282.511 312.770, 269.245 307.856, 240.451 300.012 C 213.850 292.766, 207.035 290.569, 199.704 286.876 C 185.872 279.910, 179.787 268.954, 182.135 255.247 C 183.950 244.655, 191.310 236.351, 202.845 231.882 C 207.230 230.183, 211.320 229.588, 221.052 229.233 C 235.567 228.704, 242.288 229.804, 250.929 234.122 C 261.710 239.510, 268.710 249.733, 270.462 262.654 C 271.113 267.451, 271.381 267.849, 274.331 268.400 C 278.818 269.238, 315.790 269.012, 320 268.121 L 323.500 267.380 323.190 260.440 C 322.196 238.162, 311.637 219.360, 292.500 205.792 C 275.422 193.683, 252.894 187.901, 223.651 188.122 C 214.768 188.189, 204.800 188.633, 201.500 189.109 M 797.419 190.917 C 797.188 191.146, 797 249.533, 797 320.667 L 797 450 822.489 450 L 847.977 450 847.739 395.464 C 847.531 347.901, 847.692 340.807, 849 339.979 C 849.885 339.420, 868.043 339.024, 893.270 339.015 L 936.041 339 935.770 318.250 L 935.500 297.500 891.500 297 L 847.500 296.500 847.305 277 C 847.197 266.275, 847.364 251.988, 847.675 245.250 L 848.241 233 901.620 233 L 955 233 955 212 L 955 191 926.250 190.910 C 910.438 190.860, 875.076 190.747, 847.669 190.660 C 820.262 190.572, 797.649 190.688, 797.419 190.917 M 540.500 192.869 C 531.928 195.117, 525.239 200.691, 520.896 209.203 C 517.637 215.592, 517.851 225.131, 521.417 232.419 C 522.907 235.466, 525.786 239.328, 527.814 241 C 535.256 247.139, 546.379 249.444, 556.392 246.923 C 562.183 245.465, 569.787 239.515, 573.468 233.562 C 576.189 229.162, 576.500 227.831, 576.500 220.580 C 576.500 214.557, 575.999 211.490, 574.533 208.533 C 571.869 203.160, 565.728 197.210, 560.425 194.864 C 555.553 192.709, 545.102 191.662, 540.500 192.869 M 1031 263.079 C 1000.768 266.354, 976.710 279.650, 961.869 301.284 C 954.301 312.317, 950.694 320.245, 947.324 333.251 C 945.121 341.753, 944.665 345.716, 944.648 356.500 C 944.611 379.755, 948.901 395.614, 959.562 411.636 C 966.662 422.308, 974.380 430.171, 984.367 436.910 C 1001.530 448.492, 1020.690 454, 1043.811 454 C 1073.282 454, 1098.873 443.563, 1117.226 424.058 C 1121.804 419.192, 1127.456 411.843, 1129.879 407.605 C 1144.724 381.635, 1146.854 346.948, 1135.319 319 C 1122.198 287.207, 1092.822 266.722, 1055 262.989 C 1044.239 261.927, 1041.535 261.937, 1031 263.079 M 684.500 263.557 C 683.400 263.811, 680.025 264.501, 677 265.089 C 667.578 266.921, 654.343 273.999, 646.491 281.403 C 642.646 285.030, 639.403 287.998, 639.284 287.998 C 639.165 287.999, 638.940 283.163, 638.784 277.250 L 638.500 266.500 614.832 266.500 C 601.814 266.500, 590.789 266.875, 590.332 267.333 C 589.874 267.791, 589.379 325.446, 589.231 395.454 L 588.963 522.743 592.106 523.371 C 593.835 523.717, 605.029 524, 616.980 524 L 638.711 524 639.230 517.750 C 639.515 514.313, 639.591 495.975, 639.398 477 C 639.204 458.025, 639.322 439.931, 639.659 436.792 L 640.271 431.083 647.519 437.292 C 655.476 444.108, 664.568 449.084, 673.624 451.578 C 676.918 452.486, 685.213 453.416, 692.500 453.696 C 703.142 454.104, 707.314 453.820, 715.500 452.131 C 739.672 447.143, 759.585 431.389, 771.567 407.777 C 779.860 391.432, 783.859 371.130, 782.658 351.467 C 781.076 325.564, 773.045 305.357, 758.117 289.722 C 745.977 277.006, 733.933 269.936, 717.500 265.880 C 709.877 263.999, 688.957 262.526, 684.500 263.557 M 1241.075 264.025 C 1225.085 267.387, 1213.027 275.224, 1203.352 288.543 L 1201.203 291.500 1201.301 288.500 C 1201.355 286.850, 1201.309 281.113, 1201.200 275.750 L 1201 266 1177 266 L 1153 266 1153 358 L 1153 450 1177.500 450 L 1202 450 1202.020 403.250 C 1202.031 377.538, 1202.488 353.350, 1203.037 349.500 C 1204.450 339.575, 1208.461 328.305, 1212.576 322.694 C 1216.530 317.303, 1223.026 312.344, 1229.430 309.828 C 1236.214 307.164, 1247.674 305.948, 1256.589 306.948 C 1262.360 307.595, 1264.685 307.520, 1265.227 306.667 C 1265.635 306.025, 1265.976 296.414, 1265.985 285.309 C 1265.995 271.238, 1265.654 264.904, 1264.858 264.412 C 1263.033 263.284, 1245.923 263.006, 1241.075 264.025 M 1619.500 264.137 C 1608.358 265.545, 1597.266 268.787, 1587.409 273.518 C 1580.410 276.878, 1576.339 279.719, 1570.055 285.631 C 1563.540 291.759, 1561.017 294.999, 1557.841 301.317 C 1554.155 308.647, 1551.060 319.278, 1551.017 324.750 L 1551 327 1575 327 C 1597.987 327, 1599 326.919, 1599 325.083 C 1599 321.755, 1602.636 314.518, 1605.996 311.158 C 1610.322 306.832, 1615.830 304.144, 1623.856 302.443 C 1636.991 299.659, 1653.168 301.076, 1663.609 305.925 C 1672.376 309.998, 1677 316.985, 1677 326.164 C 1677 329.424, 1676.509 330.328, 1673.866 331.935 C 1669.523 334.576, 1656.846 336.691, 1634.500 338.502 C 1604.143 340.962, 1589.275 344.240, 1574.859 351.649 C 1555.492 361.602, 1545.835 376.857, 1545.813 397.528 C 1545.808 402.494, 1546.342 408.557, 1547.001 411.002 C 1552.094 429.917, 1566.785 444.092, 1588.500 451.044 C 1594.221 452.875, 1598.515 453.366, 1612 453.733 C 1625.852 454.110, 1630.064 453.859, 1638.245 452.172 C 1650.525 449.639, 1660.254 445.200, 1670.668 437.376 L 1678.837 431.241 1679.918 437.452 C 1680.513 440.869, 1681 445.089, 1681 446.832 L 1681 450 1705.500 450 C 1724.457 450, 1729.990 449.717, 1729.956 448.750 C 1729.932 448.063, 1729.424 445.475, 1728.827 443 C 1728.148 440.186, 1727.496 415.644, 1727.087 377.500 L 1726.433 316.500 1723.732 308.500 C 1720.488 298.891, 1717.083 293.583, 1708.763 285.161 C 1698.171 274.441, 1679.663 266.741, 1658.026 264.053 C 1648.166 262.828, 1629.543 262.869, 1619.500 264.137 M 1838.500 263.948 C 1824.069 266.342, 1811.683 274.156, 1800.710 287.790 L 1798.062 291.080 1797.781 278.790 L 1797.500 266.500 1773 266.500 L 1748.500 266.500 1748.245 358.250 L 1747.990 450 1772.930 450 L 1797.870 450 1798.266 398.750 C 1798.634 351.043, 1798.801 347.016, 1800.676 340.500 C 1803.560 330.481, 1807.096 324.116, 1812.650 318.948 C 1823.348 308.995, 1831.208 306.511, 1849.750 307.223 L 1862 307.693 1862 286.406 C 1862 273.566, 1861.611 264.877, 1861.019 264.512 C 1859.332 263.469, 1843.741 263.079, 1838.500 263.948 M 523.667 266.667 C 523.300 267.033, 523 308.441, 523 358.684 L 523 450.035 547.750 449.767 L 572.500 449.500 572.794 363 C 572.956 315.425, 572.812 274.137, 572.473 271.250 L 571.856 266 548.095 266 C 535.026 266, 524.033 266.300, 523.667 266.667 M 1270.683 266.750 C 1270.443 267.163, 1274.412 281.900, 1279.503 299.500 C 1301.229 374.613, 1304.240 384.975, 1306.963 394 C 1308.540 399.225, 1312.106 411.600, 1314.888 421.500 C 1317.670 431.400, 1320.650 441.863, 1321.512 444.750 L 1323.077 450 1345.876 450 L 1368.675 450 1377.949 420.750 C 1391.762 377.186, 1403.650 340.206, 1405.836 334 L 1407.774 328.500 1408.963 331.500 C 1409.617 333.150, 1411.870 340.350, 1413.970 347.500 C 1418.539 363.054, 1429.187 397.277, 1435.284 416 C 1437.702 423.425, 1440.989 434.111, 1442.590 439.746 L 1445.500 449.992 1469.096 449.996 L 1492.692 450 1494.914 442.250 C 1496.137 437.988, 1500.240 424.825, 1504.032 413 C 1514.216 381.245, 1542.718 291.180, 1546.570 278.580 C 1548.406 272.575, 1549.677 267.287, 1549.395 266.830 C 1549.113 266.374, 1537.918 266, 1524.519 266 L 1500.155 266 1499.131 269.250 C 1498.568 271.038, 1496.481 278.800, 1494.493 286.500 C 1492.504 294.200, 1488.245 310.400, 1485.026 322.500 C 1481.808 334.600, 1476.565 354.565, 1473.376 366.866 C 1470.187 379.168, 1467.450 388.843, 1467.293 388.366 C 1465.565 383.097, 1450.322 332.778, 1448.856 327.500 C 1447.786 323.650, 1443.822 310.825, 1440.047 299 C 1436.272 287.175, 1432.454 274.913, 1431.563 271.750 L 1429.944 266 1408.111 266 L 1386.278 266 1384.061 273.250 C 1382.842 277.238, 1378.757 290.175, 1374.984 302 C 1371.211 313.825, 1367.223 326.650, 1366.122 330.500 C 1362.333 343.742, 1349.329 385.005, 1348.767 385.566 C 1348.213 386.120, 1346.548 379.501, 1339.567 349 C 1337.616 340.475, 1332.303 318.314, 1327.760 299.754 L 1319.500 266.008 1295.309 266.004 C 1282.004 266.002, 1270.922 266.337, 1270.683 266.750 M 1034.347 304.095 C 1019.347 306.601, 1008.831 314.480, 1001.952 328.366 C 992.760 346.923, 993.013 372.459, 1002.560 389.636 C 1006.558 396.829, 1015.559 405.446, 1021.975 408.222 C 1042.612 417.151, 1067.985 412.164, 1079.348 396.944 C 1089.441 383.424, 1093.065 368.655, 1091.067 349.184 C 1089.557 334.469, 1085.779 325.776, 1077.083 317.012 C 1069.817 309.688, 1064.076 306.549, 1054.069 304.427 C 1046.799 302.886, 1042.060 302.806, 1034.347 304.095 M 668.247 308.043 C 663.428 309.609, 660.518 311.455, 655.558 316.094 C 647.933 323.227, 645.019 327.894, 641.879 338 C 639.921 344.301, 639.559 347.578, 639.613 358.500 C 639.683 372.618, 641.240 380.592, 645.609 389.215 C 652.868 403.540, 667.679 412, 685.500 412 C 699.440 412, 710.329 407.223, 719.062 397.276 C 723.245 392.513, 728.696 380.953, 729.985 374.114 C 731.507 366.035, 731.233 348.332, 729.478 341.460 C 725.723 326.752, 717.300 315.735, 705.285 309.819 C 698.922 306.685, 697.877 306.486, 686.523 306.256 C 676.690 306.057, 673.361 306.382, 668.247 308.043 M 1935.467 307.397 C 1929.469 309.277, 1920.794 315.189, 1916.780 320.134 C 1908.265 330.624, 1904.649 342.191, 1904.629 359 C 1904.613 372.503, 1906.413 380.375, 1911.683 389.856 C 1916.207 397.994, 1921.228 402.821, 1929.917 407.387 C 1941.571 413.511, 1957.789 413.990, 1969.648 408.561 C 1980.121 403.766, 1990.180 391.184, 1993.681 378.500 C 1995.996 370.116, 1996.468 353.657, 1994.666 344.182 C 1992.526 332.929, 1989.186 326.095, 1982.291 318.863 C 1972.957 309.073, 1965.052 305.991, 1949.500 306.078 C 1944 306.109, 1937.685 306.702, 1935.467 307.397 M 1670 367.582 C 1666.975 368.330, 1656.175 369.864, 1646 370.990 C 1624.511 373.368, 1622.283 373.707, 1615.262 375.670 C 1604.080 378.797, 1596 387.281, 1596 395.896 C 1596 401.367, 1599.546 407.511, 1604.660 410.898 C 1610.992 415.092, 1617.734 416.358, 1630.634 415.776 C 1642.775 415.228, 1651.361 412.844, 1659.211 407.843 C 1671.725 399.870, 1676.120 391.844, 1676.785 375.750 C 1677.006 370.387, 1676.808 366.050, 1676.344 366.111 C 1675.880 366.171, 1673.025 366.833, 1670 367.582"/></svg></div>
+      </div>
+      <!-- The sub-line names the spine in its first two sentences. -->
+      <div class="tb-sub">Meridian Freight. Your move off the legacy scanner estate means every
+        application that reads shipment telemetry has to be repointed. This is how we get that
+        telemetry into the data platform and live for UAT on 5 March, and the governance
+        foundation that goes around it.</div>
+    </div>
+    <div class="tb-meta">
+      <div class="tb-cell"><span class="k">Kickoff</span><span class="v">Tue 12 Jan 2027</span></div>
+      <div class="tb-cell"><span class="k">Build complete</span><span class="v">19 Feb 2027</span></div>
+      <div class="tb-cell"><span class="k">Your UAT starts</span><span class="v spine">5 Mar 2027</span></div>
+      <div class="tb-cell"><span class="k">Engagement ends</span><span class="v">30 Apr 2027</span></div>
+    </div>
+  </header>
+
+  <!-- ============ EDIT: NAV. One entry per section, numbers matching the page bands. ============ -->
+  <nav class="topnav">
+    <a href="#plan"><span class="nn">01</span>The plan</a>
+    <a href="#ws1"><span class="nn">02</span>Workstream 1 timeline</a>
+    <a href="#need"><span class="nn">03</span>What we need from you</a>
+    <a href="#ws2"><span class="nn">04</span>Workstream 2</a>
+    <a href="#next"><span class="nn">05</span>Next steps</a>
+  </nav>
+
+  <!-- ============ 01 THE PLAN ============ -->
+  <section id="plan" class="page">
+    <div class="pageband"><span class="pnum">01</span><span class="pt">The plan</span></div>
+    <div class="pbody">
+
+      <!-- The .ask states the problem, the approach, and the spine — in that order. -->
+      <div class="ask">
+        Meridian is retiring the <b>legacy scanner estate</b>. Shipment telemetry moves with it, so
+        every application reading scan events from the on-prem collector today has to be repointed.
+        <b>5 March</b> is when UAT begins, which means this has to be <b>live and carrying data</b>
+        by then, not merely built.
+        <br><br>Rather than build and maintain an integration inside each application, we land the
+        telemetry record in the <b>data platform</b> once, and every application reads it from there
+        over a standard endpoint.
+        <span class="cap">This is what we discussed on 18 December. Two workstreams, running in
+        parallel, on one engagement. Production cutover follows your UAT.</span>
+      </div>
+
+      <table class="ft">
+        <tr>
+          <th style="width:19%"></th>
+          <th style="width:40.5%">Workstream 1 &middot; Telemetry integration</th>
+          <th style="width:40.5%">Workstream 2 &middot; Platform governance</th>
+        </tr>
+        <tr><td><b>Runs</b></td><td>12 Jan &ndash; 5 Mar 2027</td><td>8 Feb &ndash; 30 Apr 2027</td></tr>
+        <tr><td><b>Delivers</b></td>
+          <td>A governed copy of the telemetry record in the platform, refreshed on a schedule, with
+            the connectivity, identity and endpoint your applications read from.</td>
+          <td>Visibility and control over the platform estate: what exists, who has access, what
+            happened, and what it costs.</td></tr>
+        <tr><td><b>Drives</b></td>
+          <td>UAT starting 5 March. Every date here works backwards from it.</td>
+          <td>Durable platform control, plus the alerting Workstream 1 needs in production.</td></tr>
+        <tr><td><b>Pace</b></td>
+          <td><b>Definitive.</b> We bring you a recommendation rather than a menu, and we build it
+            once you have confirmed it. The date is what makes that the right approach.</td>
+          <td><b>Consultative.</b> Deployment is quick; the value is your team being able to run it
+            afterwards. Built and deployed module by module.</td></tr>
+      </table>
+
+      <!-- EDIT: the boundary. "We do not" earns its place by naming the uncomfortable ones. -->
+      <h3>Where the boundary sits</h3>
+      <div class="twocol">
+        <div class="col"><div class="box good"><b>We build</b>
+          <ul>
+            <li>The platform workspaces, the ingestion pipeline, and the serving endpoint</li>
+            <li>A managed secret store for the collector credentials, so nothing is stored in code</li>
+            <li>Data quality checks that stop bad data reaching your applications</li>
+            <li>Failure, retry and freshness notifications, raised by email into your existing process</li>
+            <li>The runbook, and knowledge transfer to your platform lead alongside the build</li>
+          </ul></div></div>
+        <div class="col"><div class="box out"><b>We do not</b>
+          <ul>
+            <li><b>Touch your production data.</b> We build and test against the sandbox and sample
+              data. You execute the promotion to production; we are not members of that workspace.</li>
+            <li>Modify the consuming applications. Your team owns the repoint.</li>
+            <li>Build the network estate. Firewall, private link and DNS remain with your
+              infrastructure team.</li>
+            <li>Provide reporting or analytics on this data. This workspace is operational only.</li>
+          </ul></div></div>
+      </div>
+
+      <!-- EDIT: four to five dates. The spine carries class="spine". -->
+      <h3>The dates that matter</h3>
+      <div class="msrow">
+        <div class="ms"><div class="d">12 Jan</div>
+          <div class="l">Kickoff, subject to paperwork completing the week prior.</div></div>
+        <div class="ms"><div class="d">22&ndash;29 Jan</div>
+          <div class="l">Endpoint live with sample data. Your developers can begin testing the read.</div></div>
+        <div class="ms"><div class="d">19 Feb</div>
+          <div class="l">Build complete and packaged in the development environment.</div></div>
+        <div class="ms spine"><div class="d">5 Mar</div>
+          <div class="l"><b>UAT begins.</b> Live in production and carrying data.</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 02 TIMELINE ============ -->
+  <section id="ws1" class="page">
+    <div class="pageband"><span class="pnum">02</span><span class="pt">Workstream 1 timeline</span></div>
+    <div class="pbody">
+      <!-- Concurrency is framed as a risk decision, never as a schedule fact. -->
+      <p>Four components, running concurrently rather than in sequence. That is deliberate: it is
+        what protects the 5 March date if collector API access takes longer than expected to provision.</p>
+      <!-- The gate is named in prose BEFORE the chart, so the reader arrives looking for it. -->
+      <p><b>One item on the chart is drawn differently, and it is the one that matters most to your
+        team.</b> The private link is joint work with your network team, and it is the dependency
+        that gates when your developers can begin testing. It is shown on its own row, with the
+        gate marked.</p>
+
+      <div class="gantt"><div class="gantt-scroll"><div class="gantt-inner">
+        <!-- EDIT: week headers. One .gc per week; .sub carries holidays and milestone hints. -->
+        <div class="grow head">
+          <div class="glab">Week beginning</div>
+          <div class="gc">11 Jan<span class="sub">kickoff</span></div>
+          <div class="gc">18 Jan<span class="sub"></span></div>
+          <div class="gc">25 Jan<span class="sub"></span></div>
+          <div class="gc">1 Feb<span class="sub"></span></div>
+          <div class="gc">8 Feb<span class="sub">WS2 starts</span></div>
+          <div class="gc">15 Feb<span class="sub">build done</span></div>
+          <div class="gc">22 Feb<span class="sub"></span></div>
+          <div class="gc">1 Mar<span class="sub">UAT 5 Mar</span></div>
+        </div>
+
+        <!-- Milestone row: diamonds only. .gate = amber dependency gate, plain = milestone. -->
+        <div class="grow bar">
+          <div class="glab"><span class="n">MILESTONES</span></div>
+          <div class="gtrack">
+            <div class="gcell"></div><div class="gcell"></div><div class="gcell"></div><div class="gcell"></div>
+            <div class="gcell"></div><div class="gcell"></div><div class="gcell"></div><div class="gcell"></div>
+            <div class="gmark" style="grid-column:1"><span title="Kickoff 12 Jan"></span></div>
+            <div class="gmark gate" style="grid-column:2"><span title="Endpoint live, target 22 Jan"></span></div>
+            <div class="gmark gate" style="grid-column:3"><span title="Endpoint live, latest 29 Jan"></span></div>
+            <div class="gmark" style="grid-column:6"><span title="Build complete 19 Feb"></span></div>
+            <div class="gmark" style="grid-column:8"><span title="Production ready, UAT 5 Mar"></span></div>
+          </div>
+        </div>
+
+        <div class="grow bar">
+          <div class="glab"><span class="n">1A</span><span class="t">Platform and connectivity</span></div>
+          <div class="gtrack">
+            <div class="gcell"></div><div class="gcell"></div><div class="gcell"></div><div class="gcell"></div>
+            <div class="gcell"></div><div class="gcell"></div><div class="gcell"></div><div class="gcell"></div>
+            <div class="gbar c1" style="grid-column:1 / span 2">Workspaces, identity</div>
+            <div class="gbar c1" style="grid-column:3 / span 4">Access control, release path</div>
+          </div>
+        </div>
+
+        <!-- The gate gets its own row. This is the whole point of the chart. -->
+        <div class="grow bar">
+          <div class="glab"><span class="n">1A &middot; JOINT</span><span class="t">Private link and connectivity proof</span></div>
+          <div class="gtrack">
+            <div class="gcell"></div><div class="gcell"></div><div class="gcell"></div><div class="gcell"></div>
+            <div class="gcell"></div><div class="gcell"></div><div class="gcell"></div><div class="gcell"></div>
+            <div class="gbar joint" style="grid-column:1 / span 3">with your network team, by 29 Jan</div>
+            <div class="gmark gate" style="grid-column:3"><span title="Dependency gate: endpoint live, 29 Jan"></span></div>
+          </div>
+        </div>
+
+        <div class="grow bar">
+          <div class="glab"><span class="n">1B</span><span class="t">Source read and platform write</span></div>
+          <div class="gtrack">
+            <div class="gcell"></div><div class="gcell"></div><div class="gcell"></div><div class="gcell"></div>
+            <div class="gcell"></div><div class="gcell"></div><div class="gcell"></div><div class="gcell"></div>
+            <div class="gbar ghost" style="grid-column:1 / span 2">awaiting collector API</div>
+            <div class="gbar c2" style="grid-column:3 / span 4">Ingestion, staging, scheduling</div>
+          </div>
+        </div>
+
+        <div class="grow bar">
+          <div class="glab"><span class="n">1C</span><span class="t">Data quality and validation</span></div>
+          <div class="gtrack">
+            <div class="gcell"></div><div class="gcell"></div><div class="gcell"></div><div class="gcell"></div>
+            <div class="gcell"></div><div class="gcell"></div><div class="gcell"></div><div class="gcell"></div>
+            <div class="gbar c3" style="grid-column:4 / span 3">Checks, serving table, alerting</div>
+          </div>
+        </div>
+
+        <div class="grow bar">
+          <div class="glab"><span class="n">1D</span><span class="t">Consumer read and enablement</span></div>
+          <div class="gtrack">
+            <div class="gcell"></div><div class="gcell"></div><div class="gcell"></div><div class="gcell"></div>
+            <div class="gcell"></div><div class="gcell"></div><div class="gcell"></div><div class="gcell"></div>
+            <div class="gbar c4" style="grid-column:2 / span 7">Sample data, contract, developer support</div>
+          </div>
+        </div>
+
+        <div class="grow bar">
+          <div class="glab"><span class="n">CLIENT</span><span class="t">Application repoint and testing</span></div>
+          <div class="gtrack">
+            <div class="gcell"></div><div class="gcell"></div><div class="gcell"></div><div class="gcell"></div>
+            <div class="gcell"></div><div class="gcell"></div><div class="gcell"></div><div class="gcell"></div>
+            <div class="gbar client" style="grid-column:3 / span 6">Your development team</div>
+          </div>
+        </div>
+
+        <div class="grow bar">
+          <div class="glab"><span class="n">DEPLOY</span><span class="t">Production deployment</span></div>
+          <div class="gtrack">
+            <div class="gcell"></div><div class="gcell"></div><div class="gcell"></div><div class="gcell"></div>
+            <div class="gcell"></div><div class="gcell"></div><div class="gcell"></div><div class="gcell"></div>
+            <div class="gbar ops" style="grid-column:6 / span 3">You execute, we support</div>
+          </div>
+        </div>
+
+        <div class="grow bar">
+          <div class="glab"><span class="n">WS2</span><span class="t">Governance workstream</span></div>
+          <div class="gtrack">
+            <div class="gcell"></div><div class="gcell"></div><div class="gcell"></div><div class="gcell"></div>
+            <div class="gcell"></div><div class="gcell"></div><div class="gcell"></div><div class="gcell"></div>
+            <div class="gbar ghost" style="grid-column:5 / span 4">begins 8 Feb, runs to 30 Apr &#9654;</div>
+          </div>
+        </div>
+      </div></div></div>
+      <p class="cap gscroll-hint">Scroll the chart sideways to see the later weeks.</p>
+
+      <!-- EDIT: legend. One entry per bar class actually used, plus both diamonds. -->
+      <div class="gkey">
+        <span class="k"><span class="sw c1"></span>Platform</span>
+        <span class="k"><span class="sw joint"></span>Joint with your team</span>
+        <span class="k"><span class="sw c2"></span>Ingestion</span>
+        <span class="k"><span class="sw c3"></span>Quality</span>
+        <span class="k"><span class="sw c4"></span>Consumer</span>
+        <span class="k"><span class="sw ops"></span>Deployment</span>
+        <span class="k"><span class="sw client"></span>Client-owned</span>
+        <span class="k"><span class="sw ghost"></span>Not yet started</span>
+        <span class="k"><span class="sw dia"></span>Milestone</span>
+        <span class="k"><span class="sw gate"></span>Dependency gate</span>
+      </div>
+
+      <!-- EDIT: one .comp per Gantt component row, same code and colour class. -->
+      <h3>What each component is</h3>
+      <div class="compstack">
+
+        <div class="comp c1">
+          <div class="ch"><span class="cn">1A</span><span class="ct">Platform and connectivity</span></div>
+          <div class="cd">Everything your developers need in order to connect. This does not wait
+            on the collector; it starts on day one.</div>
+          <ul>
+            <li>Platform workspaces, development and production</li>
+            <li>The service identities your applications authenticate with</li>
+            <li>A <b>managed secret store</b> holding the collector credentials, so nothing sits in code</li>
+            <li>The private link into your network, worked jointly with your network team</li>
+            <li>The endpoint your applications read from</li>
+            <li>Access control over who and what can see the data</li>
+            <li>The development-to-production release path</li>
+          </ul>
+        </div>
+
+        <div class="comp c2">
+          <div class="ch"><span class="cn">1B</span><span class="ct">Source read and platform write</span></div>
+          <div class="cd">The ingestion line. The one component that depends on collector API
+            access being provisioned.</div>
+          <ul>
+            <li>A scheduled process that calls the collector API and pulls the telemetry record</li>
+            <li>Authentication, paging and retry handling</li>
+            <li>The record written into a staging area, separate from what your applications read</li>
+            <li>The refresh schedule, starting at 15 minutes and tunable by configuration</li>
+          </ul>
+        </div>
+
+        <div class="comp c3">
+          <div class="ch"><span class="cn">1C</span><span class="ct">Data quality and validation</span></div>
+          <div class="cd">The layer between staging and what your applications read. Deliberate,
+            given that this record feeds billing-adjacent systems.</div>
+          <ul>
+            <li>A set of checks run against every load, before anything is published</li>
+            <li>If the checks do not pass, <b>the serving table is not updated</b>. Your applications
+              keep serving the last known-good record rather than a bad one</li>
+            <li>Records that fail are held back and reported rather than silently dropped</li>
+            <li><b>An email notification</b> when a load is stopped, a run fails, or the data goes
+              stale. Where that email goes on your side, and what it opens, stays with your
+              existing process</li>
+          </ul>
+        </div>
+
+        <div class="comp c4">
+          <div class="ch"><span class="cn">1D</span><span class="ct">Consumer read and enablement</span></div>
+          <div class="cd">What takes your application team off the critical path.</div>
+          <ul>
+            <li>The endpoint contract: what your applications connect to, how they authenticate,
+              and what they get back</li>
+            <li>A connection guide with working examples</li>
+            <li>A full-size sample data set, available <b>before</b> real telemetry exists</li>
+            <li>Per-application access, so each system sees only the population it should</li>
+            <li>Support for your developers through the build</li>
+          </ul>
+        </div>
+
+      </div>
+
+      <!-- EDIT: every line here is observable. Someone can sit down and check it. -->
+      <h3>What done looks like</h3>
+      <ul>
+        <li>Your developers can connect to the endpoint from inside your network, authenticate,
+          and read the telemetry record.</li>
+        <li>Each application sees only the population it is entitled to, once you have confirmed
+          how those populations divide.</li>
+        <li>The pipeline runs on a <b>15-minute cycle</b>, tunable by configuration.</li>
+        <li>A deliberately corrupted or truncated response from the collector does <b>not</b> reach
+          your applications, and does raise a notification.</li>
+        <li>A pipeline that fails sends a notification. A pipeline that silently never runs sends one too.</li>
+        <li>Record counts and a field-level sample reconcile against the collector.</li>
+        <li>Your platform lead has the runbook and has worked alongside the build.</li>
+      </ul>
+
+      <h3>Indicative effort</h3>
+      <p>So the plan can be read against a size rather than only against dates: Workstream 1 is
+        approximately <b>380 hours</b> of SkipForward effort between 12 January and 5 March, covering
+        the build, deployment support, the runbook and handover. That is an indicative total for
+        planning; the committed number sits in the Statement of Work.</p>
+    </div>
+  </section>
+
+  <!-- ============ 03 THE ASK ============ -->
+  <section id="need" class="page">
+    <div class="pageband"><span class="pnum">03</span><span class="pt">What we need from you</span></div>
+    <div class="pbody">
+      <p>Short list, and it is the honest critical path. The rows marked in red are the ones that
+        move 19 February if they slip, roughly day for day.</p>
+      <!-- EDIT: every row is what / by when / consequence. The third column never restates the first. -->
+      <table class="ft">
+        <tr><th style="width:30%">What</th><th style="width:22%">By when</th><th style="width:48%">Why it matters</th></tr>
+
+        <tr class="critical">
+          <td><b>Collector API access</b>
+            <span class="cap">Sandbox, credentials, permission scope, and the connector deployed
+            into your environment</span></td>
+          <td>Target 22 Jan, end of Jan at the latest</td>
+          <td>The only hard external dependency. Components 1A, 1C and 1D proceed without it; 1B
+            cannot start until it lands. Later than end of January and the ingestion build
+            compresses against 19 February.</td></tr>
+
+        <tr class="critical">
+          <td><b>Networking time</b>
+            <span class="cap">Your network lead, working with us on the private link</span></td>
+          <td>Week of 18 January</td>
+          <td>This is the dependency that determines whether the endpoint is live on
+            <b>22 January or 29 January</b>, and your developers cannot begin testing until it is.
+            We are naming it now so the date is a decision rather than something discovered later.</td></tr>
+
+        <tr class="critical">
+          <td><b>Workspace and identity provisioning</b>
+            <span class="cap">Security groups, service identities, a secret store, capacity
+            confirmation. You provision, we configure.</span></td>
+          <td>First week</td>
+          <td>Everything else in 1A sits behind it.</td></tr>
+
+        <tr><td><b>The field list, signed</b>
+            <span class="cap">Exactly which telemetry fields come out of the collector. Signed off
+            by the data owner.</span></td>
+          <td>By 21 January</td>
+          <td>Your applications build against this list from the moment the sample data ships, so
+            changing it later is a change across all of them. We will walk the list against the
+            sensitivity classification at the same time, so both are settled in one sitting.</td></tr>
+
+        <tr><td><b>Your data quality checks</b>
+            <span class="cap">The rules that should stop a load, for example "a scan event should
+            never move backwards in time"</span></td>
+          <td>By early February</td>
+          <td>We have a proposed set. Yours are the ones that reflect how the business actually behaves.</td></tr>
+
+        <tr><td><b>Notification recipients</b>
+            <span class="cap">Who receives the emails, and what you want them to open on your side</span></td>
+          <td>By early February</td>
+          <td>We raise the notification. Routing it into a ticket, an on-call rotation or a phone
+            call is your process, and we would rather point at the right inbox than a general one.</td></tr>
+
+        <tr><td><b>People for the production window</b>
+            <span class="cap">Whoever executes the promotion to production, plus approval</span></td>
+          <td>19 Feb &ndash; 5 Mar</td>
+          <td>You execute this, not us. Two weeks is enough only if the time is booked in advance.</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <!-- ============ 04 SECOND WORKSTREAM ============ -->
+  <section id="ws2" class="page">
+    <div class="pageband"><span class="pnum">04</span><span class="pt">Workstream 2 &middot; Platform governance</span></div>
+    <div class="pbody">
+
+      <div class="ask">
+        Workstream 2 starts <b>8 February</b> and runs to <b>30 April</b>, with modules built and
+        deployed as they complete rather than everything arriving at the end.
+      </div>
+
+      <h3>Two things in it that touch Workstream 1, so they are worth stating now</h3>
+      <p>These two cannot wait for the Workstream 2 detail, because they affect what your team
+        sees and when.</p>
+
+      <div class="mods">
+        <div class="mod"><div class="mh">Starts in Workstream 1, week one</div>
+          <div class="mt">Activity and audit log capture</div>
+          <div class="md">The platform activity API retains roughly <b>30 days</b> of history. Every
+            day the capture is not running is a day of history that does not exist and cannot be
+            recovered later. So this one piece stands up in the first week of Workstream 1, even
+            though the rest of the governance work starts in February. It costs almost nothing to
+            do early and it cannot be undone later.</div></div>
+        <div class="mod"><div class="mh">Lands end of March</div>
+          <div class="mt">Platform observability and access alerting</div>
+          <div class="md">To be precise about which alerting is which. <b>Pipeline health alerting is
+            Workstream 1</b> and ships with the build — a failed run, a stalled run, a failed data
+            quality check and a stale serving table all raise an alert from day one. The layer above
+            that — platform observability, and time-boxed elevation to administrator with alerting
+            on it — is a Workstream 2 delivery, scheduled for <b>end of March</b>, while you are
+            in UAT.</div></div>
+      </div>
+
+      <!-- The candour block. Name the gap here rather than let it surface in month four. -->
+      <h3>Said plainly</h3>
+      <div class="named">
+        <b>The governance and security layer over this data is only partially delivered inside
+        Workstream 1</b> — enough to be defensible on day one — and is fully delivered in
+        Workstream 2. We would rather say that now than have it discovered in April.
+      </div>
+      <p>Running the two together is what gives us the two months after 5 March to finish the
+        governance build properly, while you are in UAT and we are still engaged to support you
+        on Workstream 1.</p>
+    </div>
+  </section>
+
+  <!-- ============ 05 NEXT STEPS ============ -->
+  <section id="next" class="page">
+    <div class="pageband"><span class="pnum">05</span><span class="pt">Next steps</span></div>
+    <div class="pbody">
+      <!-- EDIT: each step names an owner and a date. No step is "we will follow up". -->
+      <ul class="steps">
+        <li><div><b>Paperwork, target 5&ndash;8 January.</b> The MSA is already in place, so this is
+          a Statement of Work rather than a contract negotiation. Kickoff follows signature.</div></li>
+        <li><div><b>Kickoff Tuesday 12 January,</b> assuming signature lands. Provisioning requests
+          go out the same day.</div></li>
+        <li><div><b>You confirm the collector session outcomes.</b> We have added our technical
+          questions to your platform lead's list for that meeting.</div></li>
+        <li><div><b>Endpoint live for your developers, 22 or 29 January,</b> depending on networking
+          availability. Everything downstream of that is on your team's own schedule.</div></li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- EDIT: date of issue, and the assumptions the dates rest on. -->
+  <footer>
+    <span>Delivery plan, 21 December 2026. Dates assume kickoff on 12 January and the dependencies
+      in section 03 landing as described.</span>
+    <span class="foot-logo"><svg viewBox="116 176 1939 358" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="SkipForward"><title>SkipForward</title><path fill="currentColor" fill-rule="evenodd" stroke="none" d="M 341.498 187.250 C 341.257 187.938, 341.158 247.225, 341.280 319 L 341.500 449.500 366.239 449.767 L 390.979 450.035 391.239 407.280 L 391.500 364.525 403.557 380.013 C 410.189 388.531, 424.767 407.762, 435.954 422.750 L 456.293 450 486.194 450 L 516.096 450 512.911 445.371 C 511.159 442.825, 507.862 438.437, 505.584 435.621 C 503.305 432.804, 500.359 428.925, 499.037 427 C 497.715 425.075, 493.796 419.900, 490.328 415.500 C 486.860 411.100, 478.490 400.075, 471.730 391 C 461.776 377.640, 451.875 364.609, 437.781 346.320 C 437.160 345.514, 439.309 342.663, 444.565 337.320 C 461.654 319.951, 509.521 268.637, 509.823 267.363 C 510.091 266.235, 504.972 266, 480.185 266 L 450.223 266 434.861 282.720 C 426.413 291.916, 413.200 306.170, 405.500 314.395 L 391.500 329.350 391.243 257.675 L 390.987 186 366.462 186 C 347.743 186, 341.833 186.296, 341.498 187.250 M 1995.457 192.555 C 1995.066 196.209, 1994.939 218.166, 1995.176 241.349 C 1995.413 264.532, 1995.433 284.305, 1995.222 285.289 C 1994.916 286.718, 1993.511 285.837, 1988.243 280.908 C 1981.086 274.213, 1969.970 268.239, 1959.500 265.459 C 1956.200 264.583, 1949 263.617, 1943.500 263.314 C 1919.531 261.990, 1895.379 271.378, 1879.396 288.232 C 1870.826 297.269, 1865.655 305.007, 1861.321 315.285 C 1856.077 327.718, 1853.861 337.264, 1853.147 350.500 C 1852.302 366.173, 1853.269 377.646, 1856.440 389.561 C 1859.926 402.657, 1865.424 413.942, 1872.867 423.277 C 1883.251 436.302, 1898.726 446.691, 1914.452 451.195 C 1921.498 453.213, 1924.618 453.492, 1939.500 453.433 C 1955.142 453.371, 1957.145 453.152, 1964.578 450.693 C 1973.856 447.625, 1982.883 442.115, 1990.616 434.802 L 1996 429.710 1996 439.855 L 1996 450 2020.504 450 L 2045.007 450 2044.754 318.250 L 2044.500 186.500 2020.334 186.206 L 1996.169 185.913 1995.457 192.555 M 201.500 189.109 C 192.905 190.347, 178.633 194.596, 171.282 198.104 C 163.173 201.974, 150.368 211.625, 145.566 217.485 C 135.569 229.684, 130.269 243.219, 129.307 258.998 C 128.578 270.974, 130.749 282.566, 135.483 291.966 C 148.124 317.069, 167.156 328.290, 220.473 342.074 C 247.023 348.939, 259.024 353.980, 265.934 361.172 C 272.708 368.221, 275.107 379.843, 272.065 390.868 C 270.511 396.500, 263.364 404.186, 256.607 407.491 C 249.533 410.953, 239.198 412.965, 228.500 412.965 C 199.447 412.965, 181.370 399.857, 178.556 376.750 L 177.856 371 152.397 371 C 131.206 371, 126.845 371.241, 126.387 372.434 C 125.637 374.389, 127.761 391.398, 129.485 397.234 C 133.095 409.460, 142.400 423.921, 151.967 432.174 C 162.686 441.420, 177.067 448.230, 194.441 452.287 C 202.289 454.120, 206.640 454.406, 227 454.423 C 247.547 454.440, 251.638 454.175, 259.559 452.307 C 285.745 446.135, 305.718 432.969, 316.911 414.500 C 324.551 401.894, 328.237 382.937, 326.019 367.659 C 324.629 358.088, 321.848 349.220, 318.343 343.182 C 314.044 335.777, 303.304 325.317, 294.616 320.074 C 282.511 312.770, 269.245 307.856, 240.451 300.012 C 213.850 292.766, 207.035 290.569, 199.704 286.876 C 185.872 279.910, 179.787 268.954, 182.135 255.247 C 183.950 244.655, 191.310 236.351, 202.845 231.882 C 207.230 230.183, 211.320 229.588, 221.052 229.233 C 235.567 228.704, 242.288 229.804, 250.929 234.122 C 261.710 239.510, 268.710 249.733, 270.462 262.654 C 271.113 267.451, 271.381 267.849, 274.331 268.400 C 278.818 269.238, 315.790 269.012, 320 268.121 L 323.500 267.380 323.190 260.440 C 322.196 238.162, 311.637 219.360, 292.500 205.792 C 275.422 193.683, 252.894 187.901, 223.651 188.122 C 214.768 188.189, 204.800 188.633, 201.500 189.109 M 797.419 190.917 C 797.188 191.146, 797 249.533, 797 320.667 L 797 450 822.489 450 L 847.977 450 847.739 395.464 C 847.531 347.901, 847.692 340.807, 849 339.979 C 849.885 339.420, 868.043 339.024, 893.270 339.015 L 936.041 339 935.770 318.250 L 935.500 297.500 891.500 297 L 847.500 296.500 847.305 277 C 847.197 266.275, 847.364 251.988, 847.675 245.250 L 848.241 233 901.620 233 L 955 233 955 212 L 955 191 926.250 190.910 C 910.438 190.860, 875.076 190.747, 847.669 190.660 C 820.262 190.572, 797.649 190.688, 797.419 190.917 M 540.500 192.869 C 531.928 195.117, 525.239 200.691, 520.896 209.203 C 517.637 215.592, 517.851 225.131, 521.417 232.419 C 522.907 235.466, 525.786 239.328, 527.814 241 C 535.256 247.139, 546.379 249.444, 556.392 246.923 C 562.183 245.465, 569.787 239.515, 573.468 233.562 C 576.189 229.162, 576.500 227.831, 576.500 220.580 C 576.500 214.557, 575.999 211.490, 574.533 208.533 C 571.869 203.160, 565.728 197.210, 560.425 194.864 C 555.553 192.709, 545.102 191.662, 540.500 192.869 M 1031 263.079 C 1000.768 266.354, 976.710 279.650, 961.869 301.284 C 954.301 312.317, 950.694 320.245, 947.324 333.251 C 945.121 341.753, 944.665 345.716, 944.648 356.500 C 944.611 379.755, 948.901 395.614, 959.562 411.636 C 966.662 422.308, 974.380 430.171, 984.367 436.910 C 1001.530 448.492, 1020.690 454, 1043.811 454 C 1073.282 454, 1098.873 443.563, 1117.226 424.058 C 1121.804 419.192, 1127.456 411.843, 1129.879 407.605 C 1144.724 381.635, 1146.854 346.948, 1135.319 319 C 1122.198 287.207, 1092.822 266.722, 1055 262.989 C 1044.239 261.927, 1041.535 261.937, 1031 263.079 M 684.500 263.557 C 683.400 263.811, 680.025 264.501, 677 265.089 C 667.578 266.921, 654.343 273.999, 646.491 281.403 C 642.646 285.030, 639.403 287.998, 639.284 287.998 C 639.165 287.999, 638.940 283.163, 638.784 277.250 L 638.500 266.500 614.832 266.500 C 601.814 266.500, 590.789 266.875, 590.332 267.333 C 589.874 267.791, 589.379 325.446, 589.231 395.454 L 588.963 522.743 592.106 523.371 C 593.835 523.717, 605.029 524, 616.980 524 L 638.711 524 639.230 517.750 C 639.515 514.313, 639.591 495.975, 639.398 477 C 639.204 458.025, 639.322 439.931, 639.659 436.792 L 640.271 431.083 647.519 437.292 C 655.476 444.108, 664.568 449.084, 673.624 451.578 C 676.918 452.486, 685.213 453.416, 692.500 453.696 C 703.142 454.104, 707.314 453.820, 715.500 452.131 C 739.672 447.143, 759.585 431.389, 771.567 407.777 C 779.860 391.432, 783.859 371.130, 782.658 351.467 C 781.076 325.564, 773.045 305.357, 758.117 289.722 C 745.977 277.006, 733.933 269.936, 717.500 265.880 C 709.877 263.999, 688.957 262.526, 684.500 263.557 M 1241.075 264.025 C 1225.085 267.387, 1213.027 275.224, 1203.352 288.543 L 1201.203 291.500 1201.301 288.500 C 1201.355 286.850, 1201.309 281.113, 1201.200 275.750 L 1201 266 1177 266 L 1153 266 1153 358 L 1153 450 1177.500 450 L 1202 450 1202.020 403.250 C 1202.031 377.538, 1202.488 353.350, 1203.037 349.500 C 1204.450 339.575, 1208.461 328.305, 1212.576 322.694 C 1216.530 317.303, 1223.026 312.344, 1229.430 309.828 C 1236.214 307.164, 1247.674 305.948, 1256.589 306.948 C 1262.360 307.595, 1264.685 307.520, 1265.227 306.667 C 1265.635 306.025, 1265.976 296.414, 1265.985 285.309 C 1265.995 271.238, 1265.654 264.904, 1264.858 264.412 C 1263.033 263.284, 1245.923 263.006, 1241.075 264.025 M 1619.500 264.137 C 1608.358 265.545, 1597.266 268.787, 1587.409 273.518 C 1580.410 276.878, 1576.339 279.719, 1570.055 285.631 C 1563.540 291.759, 1561.017 294.999, 1557.841 301.317 C 1554.155 308.647, 1551.060 319.278, 1551.017 324.750 L 1551 327 1575 327 C 1597.987 327, 1599 326.919, 1599 325.083 C 1599 321.755, 1602.636 314.518, 1605.996 311.158 C 1610.322 306.832, 1615.830 304.144, 1623.856 302.443 C 1636.991 299.659, 1653.168 301.076, 1663.609 305.925 C 1672.376 309.998, 1677 316.985, 1677 326.164 C 1677 329.424, 1676.509 330.328, 1673.866 331.935 C 1669.523 334.576, 1656.846 336.691, 1634.500 338.502 C 1604.143 340.962, 1589.275 344.240, 1574.859 351.649 C 1555.492 361.602, 1545.835 376.857, 1545.813 397.528 C 1545.808 402.494, 1546.342 408.557, 1547.001 411.002 C 1552.094 429.917, 1566.785 444.092, 1588.500 451.044 C 1594.221 452.875, 1598.515 453.366, 1612 453.733 C 1625.852 454.110, 1630.064 453.859, 1638.245 452.172 C 1650.525 449.639, 1660.254 445.200, 1670.668 437.376 L 1678.837 431.241 1679.918 437.452 C 1680.513 440.869, 1681 445.089, 1681 446.832 L 1681 450 1705.500 450 C 1724.457 450, 1729.990 449.717, 1729.956 448.750 C 1729.932 448.063, 1729.424 445.475, 1728.827 443 C 1728.148 440.186, 1727.496 415.644, 1727.087 377.500 L 1726.433 316.500 1723.732 308.500 C 1720.488 298.891, 1717.083 293.583, 1708.763 285.161 C 1698.171 274.441, 1679.663 266.741, 1658.026 264.053 C 1648.166 262.828, 1629.543 262.869, 1619.500 264.137 M 1838.500 263.948 C 1824.069 266.342, 1811.683 274.156, 1800.710 287.790 L 1798.062 291.080 1797.781 278.790 L 1797.500 266.500 1773 266.500 L 1748.500 266.500 1748.245 358.250 L 1747.990 450 1772.930 450 L 1797.870 450 1798.266 398.750 C 1798.634 351.043, 1798.801 347.016, 1800.676 340.500 C 1803.560 330.481, 1807.096 324.116, 1812.650 318.948 C 1823.348 308.995, 1831.208 306.511, 1849.750 307.223 L 1862 307.693 1862 286.406 C 1862 273.566, 1861.611 264.877, 1861.019 264.512 C 1859.332 263.469, 1843.741 263.079, 1838.500 263.948 M 523.667 266.667 C 523.300 267.033, 523 308.441, 523 358.684 L 523 450.035 547.750 449.767 L 572.500 449.500 572.794 363 C 572.956 315.425, 572.812 274.137, 572.473 271.250 L 571.856 266 548.095 266 C 535.026 266, 524.033 266.300, 523.667 266.667 M 1270.683 266.750 C 1270.443 267.163, 1274.412 281.900, 1279.503 299.500 C 1301.229 374.613, 1304.240 384.975, 1306.963 394 C 1308.540 399.225, 1312.106 411.600, 1314.888 421.500 C 1317.670 431.400, 1320.650 441.863, 1321.512 444.750 L 1323.077 450 1345.876 450 L 1368.675 450 1377.949 420.750 C 1391.762 377.186, 1403.650 340.206, 1405.836 334 L 1407.774 328.500 1408.963 331.500 C 1409.617 333.150, 1411.870 340.350, 1413.970 347.500 C 1418.539 363.054, 1429.187 397.277, 1435.284 416 C 1437.702 423.425, 1440.989 434.111, 1442.590 439.746 L 1445.500 449.992 1469.096 449.996 L 1492.692 450 1494.914 442.250 C 1496.137 437.988, 1500.240 424.825, 1504.032 413 C 1514.216 381.245, 1542.718 291.180, 1546.570 278.580 C 1548.406 272.575, 1549.677 267.287, 1549.395 266.830 C 1549.113 266.374, 1537.918 266, 1524.519 266 L 1500.155 266 1499.131 269.250 C 1498.568 271.038, 1496.481 278.800, 1494.493 286.500 C 1492.504 294.200, 1488.245 310.400, 1485.026 322.500 C 1481.808 334.600, 1476.565 354.565, 1473.376 366.866 C 1470.187 379.168, 1467.450 388.843, 1467.293 388.366 C 1465.565 383.097, 1450.322 332.778, 1448.856 327.500 C 1447.786 323.650, 1443.822 310.825, 1440.047 299 C 1436.272 287.175, 1432.454 274.913, 1431.563 271.750 L 1429.944 266 1408.111 266 L 1386.278 266 1384.061 273.250 C 1382.842 277.238, 1378.757 290.175, 1374.984 302 C 1371.211 313.825, 1367.223 326.650, 1366.122 330.500 C 1362.333 343.742, 1349.329 385.005, 1348.767 385.566 C 1348.213 386.120, 1346.548 379.501, 1339.567 349 C 1337.616 340.475, 1332.303 318.314, 1327.760 299.754 L 1319.500 266.008 1295.309 266.004 C 1282.004 266.002, 1270.922 266.337, 1270.683 266.750 M 1034.347 304.095 C 1019.347 306.601, 1008.831 314.480, 1001.952 328.366 C 992.760 346.923, 993.013 372.459, 1002.560 389.636 C 1006.558 396.829, 1015.559 405.446, 1021.975 408.222 C 1042.612 417.151, 1067.985 412.164, 1079.348 396.944 C 1089.441 383.424, 1093.065 368.655, 1091.067 349.184 C 1089.557 334.469, 1085.779 325.776, 1077.083 317.012 C 1069.817 309.688, 1064.076 306.549, 1054.069 304.427 C 1046.799 302.886, 1042.060 302.806, 1034.347 304.095 M 668.247 308.043 C 663.428 309.609, 660.518 311.455, 655.558 316.094 C 647.933 323.227, 645.019 327.894, 641.879 338 C 639.921 344.301, 639.559 347.578, 639.613 358.500 C 639.683 372.618, 641.240 380.592, 645.609 389.215 C 652.868 403.540, 667.679 412, 685.500 412 C 699.440 412, 710.329 407.223, 719.062 397.276 C 723.245 392.513, 728.696 380.953, 729.985 374.114 C 731.507 366.035, 731.233 348.332, 729.478 341.460 C 725.723 326.752, 717.300 315.735, 705.285 309.819 C 698.922 306.685, 697.877 306.486, 686.523 306.256 C 676.690 306.057, 673.361 306.382, 668.247 308.043 M 1935.467 307.397 C 1929.469 309.277, 1920.794 315.189, 1916.780 320.134 C 1908.265 330.624, 1904.649 342.191, 1904.629 359 C 1904.613 372.503, 1906.413 380.375, 1911.683 389.856 C 1916.207 397.994, 1921.228 402.821, 1929.917 407.387 C 1941.571 413.511, 1957.789 413.990, 1969.648 408.561 C 1980.121 403.766, 1990.180 391.184, 1993.681 378.500 C 1995.996 370.116, 1996.468 353.657, 1994.666 344.182 C 1992.526 332.929, 1989.186 326.095, 1982.291 318.863 C 1972.957 309.073, 1965.052 305.991, 1949.500 306.078 C 1944 306.109, 1937.685 306.702, 1935.467 307.397 M 1670 367.582 C 1666.975 368.330, 1656.175 369.864, 1646 370.990 C 1624.511 373.368, 1622.283 373.707, 1615.262 375.670 C 1604.080 378.797, 1596 387.281, 1596 395.896 C 1596 401.367, 1599.546 407.511, 1604.660 410.898 C 1610.992 415.092, 1617.734 416.358, 1630.634 415.776 C 1642.775 415.228, 1651.361 412.844, 1659.211 407.843 C 1671.725 399.870, 1676.120 391.844, 1676.785 375.750 C 1677.006 370.387, 1676.808 366.050, 1676.344 366.111 C 1675.880 366.171, 1673.025 366.833, 1670 367.582"/></svg></span>
+  </footer>
+
+</div>
+</body>
+</html>
